@@ -296,6 +296,11 @@ namespace ModpackProgressionRebalance
             HookCentralStationTileAction();
             CheckFiasaArrival(isDayStart: true);
             ApplyLiveLocationBlocksToAll();
+
+            if (Game1.year == 1 && Game1.season == Season.Summer && Game1.dayOfMonth == 1)
+            {
+                Helper.GameContent.InvalidateCache("Maps/Tunnel");
+            }
         }
 
         private void OnUpdateTicking(object? sender, UpdateTickingEventArgs e)
@@ -629,8 +634,13 @@ namespace ModpackProgressionRebalance
         {
             return (Config.EnableFIASAGate && IsFIASALocation(locName))
                 || (Config.EnableTrolleyDesertGate && IsTrolleyDesertLocation(locName))
-                || (Config.EnableWalkToDesertGate && IsWalkToDesertLocation(locName))
+                || (Config.EnableWalkToDesertGate && isWalkToDesertInstalled && IsBeforeFirstSummer() && IsWalkToDesertLocation(locName))
                 || (Config.EnableCentralStationGate && IsCentralStationLocation(locName));
+        }
+
+        public bool IsBeforeFirstSummer()
+        {
+            return Game1.year == 1 && Game1.season == Season.Spring;
         }
 
         public bool IsFIASALocation(string locName)
@@ -891,6 +901,36 @@ namespace ModpackProgressionRebalance
                 }
             }
 
+            // 3. Walk to Desert (Tunnel & Backwoods & Forest_Road)
+            if (isWalkToDesertInstalled)
+            {
+                if (locName == "Tunnel" && Config.EnableWalkToDesertGate && IsBeforeFirstSummer())
+                {
+                    ApplyTunnelWalkDesertBlock(loc.Map);
+                    RemoveLiveWarps(loc, "Forest_Road");
+                    RemoveLiveWarps(loc, "WalkToDesert");
+                }
+                else if (locName == "Backwoods" && Config.RemoveHorseWarp)
+                {
+                    ApplyBackwoodsHorseWarpRemoval(loc.Map);
+                    RemoveLiveWarps(loc, "Forest_Road");
+                    RemoveLiveWarps(loc, "WalkToDesert");
+                }
+                else if (locName.Contains("Forest_Road", StringComparison.OrdinalIgnoreCase) && Config.RemoveHorseWarp)
+                {
+                    ApplyForestRoadHorseWarpRemoval(loc.Map);
+                    RemoveLiveWarps(loc, "Backwoods");
+                }
+            }
+
+            // 4. Railroad Unification (remove Grampleton terminal at 30, 39..40)
+            if (locName == "Railroad" && Config.RemoveRailroadGrampletonTerminal)
+            {
+                ApplyRailroadUnification(loc.Map);
+                RemoveLiveWarps(loc, "Custom_GrampletonFields");
+                RemoveLiveWarps(loc, "GrampletonFields");
+            }
+
 
         }
 
@@ -1019,7 +1059,68 @@ namespace ModpackProgressionRebalance
 
         private void ApplyTunnelWalkDesertBlock(Map map)
         {
-            // Restored original map: no restriction tiles or warp removals
+            var back = map.GetLayer("Back");
+            if (back != null)
+            {
+                for (int y = 6; y <= 13; y++)
+                {
+                    for (int x = 0; x <= 1; x++)
+                    {
+                        if (x < back.LayerWidth && y < back.LayerHeight && back.Tiles[x, y] != null)
+                        {
+                            if (back.Tiles[x, y].Properties.ContainsKey("TouchAction"))
+                            {
+                                back.Tiles[x, y].Properties["TouchAction"] = "ProgressionRebalance_WalkDesertBlocked";
+                            }
+                        }
+                    }
+                }
+            }
+            RemoveWarpFromMapProperties(map, "Forest_Road");
+            RemoveWarpFromMapProperties(map, "WalkToDesert");
+        }
+
+        private void ApplyBackwoodsHorseWarpRemoval(Map map)
+        {
+            var back = map.GetLayer("Back");
+            if (back != null && 30 < back.LayerWidth && 23 < back.LayerHeight && back.Tiles[30, 23] != null)
+            {
+                back.Tiles[30, 23].Properties.Remove("TouchAction");
+            }
+            RemoveWarpFromMapProperties(map, "Forest_Road");
+            RemoveWarpFromMapProperties(map, "WalkToDesert");
+        }
+
+        private void ApplyForestRoadHorseWarpRemoval(Map map)
+        {
+            var back = map.GetLayer("Back");
+            if (back != null && 53 < back.LayerWidth && 13 < back.LayerHeight && back.Tiles[53, 13] != null)
+            {
+                back.Tiles[53, 13].Properties.Remove("TouchAction");
+            }
+            if (back != null && 50 < back.LayerWidth && 14 < back.LayerHeight && back.Tiles[50, 14] != null)
+            {
+                back.Tiles[50, 14].Properties.Remove("TouchAction");
+            }
+            RemoveWarpFromMapProperties(map, "Backwoods");
+        }
+
+        private void ApplyRailroadUnification(Map map)
+        {
+            var front = map.GetLayer("Front");
+            var buildings = map.GetLayer("Buildings");
+
+            // Remove the separate Grampleton Fields terminal at (30, 39..40)
+            if (front != null && 30 < front.LayerWidth && 39 < front.LayerHeight)
+            {
+                front.Tiles[30, 39] = null;
+            }
+            if (buildings != null && 30 < buildings.LayerWidth && 40 < buildings.LayerHeight)
+            {
+                buildings.Tiles[30, 40] = null;
+            }
+            RemoveWarpFromMapProperties(map, "Custom_GrampletonFields");
+            RemoveWarpFromMapProperties(map, "GrampletonFields");
         }
 
         private void ApplyBackwoodsWalkDesertBlock(Map map)
@@ -1192,6 +1293,49 @@ namespace ModpackProgressionRebalance
                                     condProp?.SetValue(model, "PLAYER_HAS_MAIL Current " + FlagAquariumQuestReceived);
                                 }
                             }
+
+                            // Add Grampleton Fields stop to Central Station Train network
+                            if (Config.EnableGrampletonFieldsCentralStation && !dict.Contains("ProgressionRebalance_GrampletonFields"))
+                            {
+                                foreach (System.Collections.DictionaryEntry entry in dict)
+                                {
+                                    if (entry.Value != null)
+                                    {
+                                        Type modelType = entry.Value.GetType();
+                                        object newStop = Activator.CreateInstance(modelType)!;
+                                        modelType.GetProperty("DisplayName")?.SetValue(newStop, Helper.Translation.Get("destinations.grampleton_fields"));
+                                        modelType.GetProperty("ToLocation")?.SetValue(newStop, "Custom_GrampletonFields");
+                                        modelType.GetProperty("ToFacingDirection")?.SetValue(newStop, "down");
+                                        modelType.GetProperty("Network")?.SetValue(newStop, "Train");
+                                        modelType.GetProperty("Cost")?.SetValue(newStop, 0);
+                                        modelType.GetProperty("Condition")?.SetValue(newStop, "LOCATION_ACCESSIBLE Railroad");
+
+                                        PropertyInfo? toTileProp = modelType.GetProperty("ToTile");
+                                        if (toTileProp != null)
+                                        {
+                                            Type tileType = toTileProp.PropertyType;
+                                            if (tileType == typeof(Point))
+                                            {
+                                                toTileProp.SetValue(newStop, new Point(94, 9));
+                                            }
+                                            else if (tileType == typeof(Vector2))
+                                            {
+                                                toTileProp.SetValue(newStop, new Vector2(94, 9));
+                                            }
+                                            else
+                                            {
+                                                object tileObj = Activator.CreateInstance(tileType)!;
+                                                tileType.GetProperty("X")?.SetValue(tileObj, 94);
+                                                tileType.GetProperty("Y")?.SetValue(tileObj, 9);
+                                                toTileProp.SetValue(newStop, tileObj);
+                                            }
+                                        }
+
+                                        dict["ProgressionRebalance_GrampletonFields"] = newStop;
+                                        break;
+                                    }
+                                }
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -1199,6 +1343,80 @@ namespace ModpackProgressionRebalance
                         Monitor.LogOnce($"Error editing Central Station stops asset: {ex.Message}", LogLevel.Warn);
                     }
                 }, AssetEditPriority.Late);
+            }
+
+            // Downtown Zuzu: Sell Qi Blade for 50 Qi Gems
+            if (e.NameWithoutLocale.IsEquivalentTo("Data/Shops"))
+            {
+                if (Config.EnableQiBladeQiGemsPrice)
+                {
+                    e.Edit(asset =>
+                    {
+                        var data = asset.AsDictionary<string, StardewValley.GameData.Shops.ShopData>().Data;
+                        if (data.TryGetValue("DTZ.DowntownZuzuSTF_SecretQi", out var shop) && shop.Items != null)
+                        {
+                            var item = shop.Items.FirstOrDefault(i => i.ItemId == "(W)DTZ.DowntownZuzuCP_QiBlade");
+                            if (item != null)
+                            {
+                                item.Price = 0;
+                                item.TradeItemId = "(O)858";
+                                item.TradeItemAmount = Config.QiBladeQiGemsCost;
+                            }
+                        }
+                    }, AssetEditPriority.Late + 50);
+                }
+            }
+
+            // Railroad Grampleton Terminal removal
+            if (e.NameWithoutLocale.IsEquivalentTo("Maps/Railroad"))
+            {
+                if (Config.RemoveRailroadGrampletonTerminal)
+                {
+                    e.Edit(asset =>
+                    {
+                        var map = asset.AsMap().Data;
+                        ApplyRailroadUnification(map);
+                    }, AssetEditPriority.Late + 100);
+                }
+            }
+
+            // Block Walk to Desert through Tunnel until first summer
+            if (e.NameWithoutLocale.IsEquivalentTo("Maps/Tunnel"))
+            {
+                if (Config.EnableWalkToDesertGate && isWalkToDesertInstalled && IsBeforeFirstSummer())
+                {
+                    e.Edit(asset =>
+                    {
+                        var map = asset.AsMap().Data;
+                        ApplyTunnelWalkDesertBlock(map);
+                    }, AssetEditPriority.Late + 100);
+                }
+            }
+
+            // Remove Horse Warp from Backwoods completely
+            if (e.NameWithoutLocale.IsEquivalentTo("Maps/Backwoods"))
+            {
+                if (Config.RemoveHorseWarp && isWalkToDesertInstalled)
+                {
+                    e.Edit(asset =>
+                    {
+                        var map = asset.AsMap().Data;
+                        ApplyBackwoodsHorseWarpRemoval(map);
+                    }, AssetEditPriority.Late + 100);
+                }
+            }
+
+            // Remove Horse Warp from Forest Road completely
+            if (e.NameWithoutLocale.IsEquivalentTo("Maps/Tarniyar.CP.WalkToDesert_Forest_Road"))
+            {
+                if (Config.RemoveHorseWarp && isWalkToDesertInstalled)
+                {
+                    e.Edit(asset =>
+                    {
+                        var map = asset.AsMap().Data;
+                        ApplyForestRoadHorseWarpRemoval(map);
+                    }, AssetEditPriority.Late + 100);
+                }
             }
         }
 
@@ -1383,6 +1601,13 @@ namespace ModpackProgressionRebalance
                 name: () => Helper.Translation.Get("config.enable_walk_desert_gate"),
                 tooltip: () => Helper.Translation.Get("config.enable_walk_desert_gate.desc")
             );
+            configMenu.AddBoolOption(
+                ModManifest,
+                getValue: () => Config.RemoveHorseWarp,
+                setValue: value => Config.RemoveHorseWarp = value,
+                name: () => Helper.Translation.Get("config.remove_horse_warp"),
+                tooltip: () => Helper.Translation.Get("config.remove_horse_warp.desc")
+            );
             configMenu.AddNumberOption(
                 ModManifest,
                 getValue: () => Config.WalkToDesertStaminaCost,
@@ -1401,7 +1626,7 @@ namespace ModpackProgressionRebalance
                 tooltip: () => Helper.Translation.Get("config.walk_drain_return.desc")
             );
 
-            // Central Station & Aquarium section
+            // Central Station & Railroad section
             configMenu.AddSectionTitle(ModManifest, () => Helper.Translation.Get("config.central_station_section"));
             configMenu.AddBoolOption(
                 ModManifest,
@@ -1409,6 +1634,13 @@ namespace ModpackProgressionRebalance
                 setValue: value => Config.EnableCentralStationGate = value,
                 name: () => Helper.Translation.Get("config.enable_central_gate"),
                 tooltip: () => Helper.Translation.Get("config.enable_central_gate.desc")
+            );
+            configMenu.AddBoolOption(
+                ModManifest,
+                getValue: () => Config.RemoveRailroadGrampletonTerminal,
+                setValue: value => Config.RemoveRailroadGrampletonTerminal = value,
+                name: () => Helper.Translation.Get("config.remove_railroad_terminal"),
+                tooltip: () => Helper.Translation.Get("config.remove_railroad_terminal.desc")
             );
             configMenu.AddBoolOption(
                 ModManifest,
@@ -1433,6 +1665,26 @@ namespace ModpackProgressionRebalance
                 min: 0,
                 max: 10000,
                 interval: 25
+            );
+
+            // Downtown Zuzu section
+            configMenu.AddSectionTitle(ModManifest, () => Helper.Translation.Get("config.zuzu_section"));
+            configMenu.AddBoolOption(
+                ModManifest,
+                getValue: () => Config.EnableQiBladeQiGemsPrice,
+                setValue: value => Config.EnableQiBladeQiGemsPrice = value,
+                name: () => Helper.Translation.Get("config.enable_qiblade_qigems"),
+                tooltip: () => Helper.Translation.Get("config.enable_qiblade_qigems.desc")
+            );
+            configMenu.AddNumberOption(
+                ModManifest,
+                getValue: () => Config.QiBladeQiGemsCost,
+                setValue: value => Config.QiBladeQiGemsCost = value,
+                name: () => Helper.Translation.Get("config.qiblade_cost"),
+                tooltip: () => Helper.Translation.Get("config.qiblade_cost.desc"),
+                min: 1,
+                max: 500,
+                interval: 5
             );
         }
     }
