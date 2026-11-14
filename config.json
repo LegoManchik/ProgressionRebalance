@@ -1,0 +1,14 @@
+{
+  "EnableFIASAGate": true,
+  "FIASAArrivalSeason": "Summer",
+  "FIASAArrivalYear": 1,
+  "FIASAArrivalDay": 1,
+  "EnableTrolleyDesertGate": false,
+  "EnableWalkToDesertGate": false,
+  "WalkToDesertStaminaCost": 0.0,
+  "WalkToDesertDrainOnReturn": false,
+  "EnableCentralStationGate": true,
+  "EnableAquariumQuest": true,
+  "AquariumQuestRewardGold": 500,
+  "AquariumTicketPrice": 500
+}

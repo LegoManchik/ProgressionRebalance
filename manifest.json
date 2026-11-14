@@ -1,0 +1,10 @@
+{
+  "Name": "Modpack Progression Rebalance",
+  "Author": "LegoManchik",
+  "Version": "1.0.0",
+  "Description": "Progression gates and balance adjustments for Trolley Expansion, Walk to Desert, Central Station, and Stardew Aquarium.",
+  "UniqueID": "LegoManchik.ProgressionRebalance",
+  "EntryDll": "ModpackProgressionRebalance.dll",
+  "MinimumApiVersion": "4.0.0",
+  "UpdateKeys": []
+}

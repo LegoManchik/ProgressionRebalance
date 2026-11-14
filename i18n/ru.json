@@ -1,0 +1,41 @@
+{
+  "gate.fiasa_closed": "Старые трамвайные пути уходят в туман. Здесь пока ничего нет.",
+  "gate.trolley_desert_closed": "Пустыня ещё недоступна. Сначала отремонтируйте автобус.",
+  "gate.walk_desert_not_repaired": "Вы только недавно приехали, уже хотите вернуться?",
+  "gate.walk_desert_exhausted": "У вас не хватает сил на такую дорогу. Отдохните или поезжайте на автобусе.",
+  "gate.central_station_closed": "Терминал сейчас не работает.",
+  "gate.terminal_out_of_service": "Терминал сейчас не работает.",
+  "willy.fiasa_dialogue": "Ты тоже видел этот туман на рассвете? Клянусь старым Якорем, там, за скалами, двигалось что-то массивное... Словно стальные тени на путях.",
+  "willy.fiasa_letter": "Привет, сосед!^^Сегодня на рассвете, когда я вышел проверять сети у берега, я приметил странное зрелище сквозь туман... Казалось, старые заброшенные пути снова ожили, и сквозь пелену пробивались огни неизвестного судна. Будь осторожен, если соберешься в ту сторону.^^   - Вилли",
+  "inke.aquarium_dialogue": "Слышал новости? Автобус починили, и теперь через Центральную станцию можно добраться на поезде до самого Стардью Аквариума! Тебе обязательно стоит там побывать.",
+  "aquarium_quest.title": "Добраться до Stardew Aquarium через Central Station",
+  "aquarium_quest.description": "С ремонтом автобуса Центральная станция снова открыта. С неё отправляются поезда в другие регионы. Сядьте на поезд на Центральной станции и посетите Стардью Аквариум.",
+  "aquarium_quest.objective": "Добраться до Stardew Aquarium",
+  "aquarium_quest.completed_hud": "Задание выполнено: Добраться до Stardew Aquarium (+{{reward}} з.)",
+
+  "config.fiasa_section": "Прогрессия FIASA (Trolley)",
+  "config.enable_fiasa_gate": "Включить ограничение FIASA",
+  "config.enable_fiasa_gate.desc": "Если включено, вход в FIASA / Trolley закрыт до даты прибытия.",
+  "config.fiasa_season": "Сезон прибытия",
+  "config.fiasa_year": "Год прибытия",
+  "config.fiasa_day": "День прибытия",
+
+  "config.trolley_desert_section": "Прогрессия пустыни Trolley",
+  "config.enable_trolley_desert_gate": "Включить ограничение пустыни Trolley",
+  "config.enable_trolley_desert_gate.desc": "Если включено, вход в каньон и пустыню через пути закрыт до починки автобуса.",
+
+  "config.walk_desert_section": "Прогрессия пешего пути в пустыню",
+  "config.enable_walk_desert_gate": "Включить ограничение Walk to Desert",
+  "config.enable_walk_desert_gate.desc": "Если включено, блокирует вход до починки автобуса и тратит энергию после.",
+  "config.walk_stamina_cost": "Затраты энергии (пешком)",
+  "config.walk_stamina_cost.desc": "Количество энергии, отнимаемое за пеший путь. На лошади энергия не тратится.",
+  "config.walk_drain_return": "Тратить энергию на обратный путь",
+  "config.walk_drain_return.desc": "Тратить ли энергию при возвращении из пустыни пешком.",
+
+  "config.central_station_section": "Центральная станция и Аквариум",
+  "config.enable_central_gate": "Включить ограничение Центральной станции",
+  "config.enable_central_gate.desc": "Если включено, вход на Центральную станцию закрыт до починки автобуса.",
+  "config.enable_aquarium_quest": "Включить квест на Аквариум",
+  "config.aquarium_reward": "Награда за квест (золото)",
+  "config.aquarium_price": "Цена билета в Аквариум"
+}

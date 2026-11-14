@@ -1,0 +1,41 @@
+{
+  "gate.fiasa_closed": "The old trolley tracks fade into the fog. There's nothing here yet.",
+  "gate.trolley_desert_closed": "The desert is not accessible yet. Repair the bus first.",
+  "gate.walk_desert_not_repaired": "You only just arrived, do you want to head back already?",
+  "gate.walk_desert_exhausted": "You don't have enough energy for such a long walk. Rest first or take the bus.",
+  "gate.central_station_closed": "The terminal is currently out of service.",
+  "gate.terminal_out_of_service": "The terminal is currently out of service.",
+  "willy.fiasa_dialogue": "Did you see that mist at dawn? By the Old Mariner, something massive was stirring out beyond the rocks... like steel silhouettes along the old tracks.",
+  "willy.fiasa_letter": "Hey neighbor!^^At dawn today, while checking my nets by the water, I noticed a strange sight through the fog... It looked as if the old abandoned tracks stirred, and lights from an unfamiliar vessel flickered through the mist. Watch your step if you head out that way.^^   - Willy",
+  "inke.aquarium_dialogue": "Did you hear the news? The bus is fixed, and now you can take a train from Central Station all the way to Stardew Aquarium! You should definitely check it out.",
+  "aquarium_quest.title": "Reach Stardew Aquarium via Central Station",
+  "aquarium_quest.description": "With the bus repaired, Central Station is open again. Trains are departing to other regions. Take a train from Central Station and visit Stardew Aquarium.",
+  "aquarium_quest.objective": "Reach Stardew Aquarium",
+  "aquarium_quest.completed_hud": "Quest completed: Reach Stardew Aquarium (+{{reward}}g)",
+
+  "config.fiasa_section": "FIASA (Trolley) Progression",
+  "config.enable_fiasa_gate": "Enable FIASA Gate",
+  "config.enable_fiasa_gate.desc": "If enabled, blocks access to FIASA / Trolley until the arrival date.",
+  "config.fiasa_season": "Arrival Season",
+  "config.fiasa_year": "Arrival Year",
+  "config.fiasa_day": "Arrival Day",
+
+  "config.trolley_desert_section": "Trolley Desert Progression",
+  "config.enable_trolley_desert_gate": "Enable Trolley Desert Gate",
+  "config.enable_trolley_desert_gate.desc": "If enabled, blocks trolley canyon/desert access until the bus is repaired.",
+
+  "config.walk_desert_section": "Walk to Desert Progression",
+  "config.enable_walk_desert_gate": "Enable Walk to Desert Gate",
+  "config.enable_walk_desert_gate.desc": "If enabled, blocks walk to desert before bus repair and consumes stamina after repair.",
+  "config.walk_stamina_cost": "Stamina Cost (on foot)",
+  "config.walk_stamina_cost.desc": "Energy drained when walking to the desert on foot. Zero cost when riding a horse.",
+  "config.walk_drain_return": "Drain Stamina on Return",
+  "config.walk_drain_return.desc": "Whether walking back from the desert also consumes stamina.",
+
+  "config.central_station_section": "Central Station & Aquarium",
+  "config.enable_central_gate": "Enable Central Station Gate",
+  "config.enable_central_gate.desc": "If enabled, Central Station is locked until the bus is repaired.",
+  "config.enable_aquarium_quest": "Enable Aquarium Quest",
+  "config.aquarium_reward": "Aquarium Quest Gold Reward",
+  "config.aquarium_price": "Aquarium Ticket Price"
+}
