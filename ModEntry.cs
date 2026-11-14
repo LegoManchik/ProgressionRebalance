@@ -931,6 +931,12 @@ namespace ModpackProgressionRebalance
                 RemoveLiveWarps(loc, "GrampletonFields");
             }
 
+            // 5. Grampleton Fields Central Station Terminal
+            if ((locName == "Custom_GrampletonFields" || locName == "GrampletonFields") && Config.EnableGrampletonFieldsCentralStation)
+            {
+                ApplyGrampletonFieldsCentralStationTerminal(loc.Map);
+            }
+
 
         }
 
@@ -1123,6 +1129,43 @@ namespace ModpackProgressionRebalance
             RemoveWarpFromMapProperties(map, "GrampletonFields");
         }
 
+        private void ApplyGrampletonFieldsCentralStationTerminal(Map map)
+        {
+            var front = map.GetLayer("Front");
+            var buildings = map.GetLayer("Buildings");
+
+            // 1. Remove old handcar tiles at (86, 7) on Front and (86, 8) on Buildings
+            if (front != null && 86 < front.LayerWidth && 7 < front.LayerHeight)
+            {
+                front.Tiles[86, 7] = null;
+            }
+            if (buildings != null && 86 < buildings.LayerWidth && 8 < buildings.LayerHeight)
+            {
+                buildings.Tiles[86, 8] = null;
+            }
+
+            // 2. Patch Central Station's ticket machine visual onto (86, 7..8)
+            try
+            {
+                Map ticketMachineMap = Helper.GameContent.Load<Map>("Mods/Pathoschild.CentralStation/TicketMachine");
+                var patchHelper = Helper.GameContent.GetPatchHelper(map, "Maps/Custom_GrampletonFields");
+                patchHelper.AsMap().PatchMap(ticketMachineMap, null, new Rectangle(86, 7, 1, 2));
+            }
+            catch (Exception ex)
+            {
+                Monitor.LogOnce($"Could not patch Central Station ticket machine visual onto Grampleton Fields: {ex.Message}", LogLevel.Trace);
+            }
+
+            // 3. Ensure tile (86, 8) has CentralStation action property
+            if (buildings != null && 86 < buildings.LayerWidth && 8 < buildings.LayerHeight && buildings.Tiles[86, 8] != null)
+            {
+                buildings.Tiles[86, 8].Properties["Action"] = "CentralStation Train";
+            }
+
+            // 4. Set map property for Central Station
+            map.Properties["Pathoschild.CentralStation_TicketMachine"] = "86 8 Train";
+        }
+
         private void ApplyBackwoodsWalkDesertBlock(Map map)
         {
             // Restored original map: no restriction tiles or warp removals
@@ -1292,9 +1335,16 @@ namespace ModpackProgressionRebalance
                                     costProp?.SetValue(model, Config.AquariumTicketPrice);
                                     condProp?.SetValue(model, "PLAYER_HAS_MAIL Current " + FlagAquariumQuestReceived);
                                 }
+
+                                // Ensure Grampleton Fields stop is accessible from Central Station
+                                if (key.Contains("GrampletonFields"))
+                                {
+                                    condProp?.SetValue(model, null);
+                                    modelType.GetProperty("Network")?.SetValue(model, "Bus, Train");
+                                }
                             }
 
-                            // Add Grampleton Fields stop to Central Station Train network
+                            // Add Grampleton Fields stop to Central Station network
                             if (Config.EnableGrampletonFieldsCentralStation && !dict.Contains("ProgressionRebalance_GrampletonFields"))
                             {
                                 foreach (System.Collections.DictionaryEntry entry in dict)
@@ -1306,9 +1356,9 @@ namespace ModpackProgressionRebalance
                                         modelType.GetProperty("DisplayName")?.SetValue(newStop, Helper.Translation.Get("destinations.grampleton_fields"));
                                         modelType.GetProperty("ToLocation")?.SetValue(newStop, "Custom_GrampletonFields");
                                         modelType.GetProperty("ToFacingDirection")?.SetValue(newStop, "down");
-                                        modelType.GetProperty("Network")?.SetValue(newStop, "Train");
+                                        modelType.GetProperty("Network")?.SetValue(newStop, "Bus, Train");
                                         modelType.GetProperty("Cost")?.SetValue(newStop, 0);
-                                        modelType.GetProperty("Condition")?.SetValue(newStop, "LOCATION_ACCESSIBLE Railroad");
+                                        modelType.GetProperty("Condition")?.SetValue(newStop, null);
 
                                         PropertyInfo? toTileProp = modelType.GetProperty("ToTile");
                                         if (toTileProp != null)
@@ -1316,16 +1366,16 @@ namespace ModpackProgressionRebalance
                                             Type tileType = toTileProp.PropertyType;
                                             if (tileType == typeof(Point))
                                             {
-                                                toTileProp.SetValue(newStop, new Point(94, 9));
+                                                toTileProp.SetValue(newStop, new Point(86, 9));
                                             }
                                             else if (tileType == typeof(Vector2))
                                             {
-                                                toTileProp.SetValue(newStop, new Vector2(94, 9));
+                                                toTileProp.SetValue(newStop, new Vector2(86, 9));
                                             }
                                             else
                                             {
                                                 object tileObj = Activator.CreateInstance(tileType)!;
-                                                tileType.GetProperty("X")?.SetValue(tileObj, 94);
+                                                tileType.GetProperty("X")?.SetValue(tileObj, 86);
                                                 tileType.GetProperty("Y")?.SetValue(tileObj, 9);
                                                 toTileProp.SetValue(newStop, tileObj);
                                             }
@@ -1362,6 +1412,14 @@ namespace ModpackProgressionRebalance
                                 item.TradeItemId = "(O)858";
                                 item.TradeItemAmount = Config.QiBladeQiGemsCost;
                             }
+
+                            var sword = shop.Items.FirstOrDefault(i => i.ItemId == "(W)DTZ.DowntownZuzuCP_Serpent'sSmallsword");
+                            if (sword != null)
+                            {
+                                sword.Price = 0;
+                                sword.TradeItemId = "(O)858";
+                                sword.TradeItemAmount = Config.QiBladeQiGemsCost;
+                            }
                         }
                     }, AssetEditPriority.Late + 50);
                 }
@@ -1376,6 +1434,19 @@ namespace ModpackProgressionRebalance
                     {
                         var map = asset.AsMap().Data;
                         ApplyRailroadUnification(map);
+                    }, AssetEditPriority.Late + 100);
+                }
+            }
+
+            // Grampleton Fields Central Station Terminal
+            if (e.NameWithoutLocale.IsEquivalentTo("Maps/Custom_GrampletonFields") || e.NameWithoutLocale.IsEquivalentTo("Maps/GrampletonFields"))
+            {
+                if (Config.EnableGrampletonFieldsCentralStation)
+                {
+                    e.Edit(asset =>
+                    {
+                        var map = asset.AsMap().Data;
+                        ApplyGrampletonFieldsCentralStationTerminal(map);
                     }, AssetEditPriority.Late + 100);
                 }
             }
